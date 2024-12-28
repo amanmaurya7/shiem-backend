@@ -39,11 +39,31 @@ exports.addTeamMember = asyncHandler(async (req, res) => {
 
 exports.getAllTeamMembers = asyncHandler(async (req, res) => {
   const teamMembers = await User.find({ role: 'team_member' }).select('-password');
-  if (!teamMembers) {
+  
+  if (!teamMembers || teamMembers.length === 0) {
     res.status(404);
     throw new Error('No team members found');
   }
-  res.json(teamMembers);
+
+  const teamMembersWithStats = await Promise.all(teamMembers.map(async (member) => {
+    const totalTasks = await Task.countDocuments({ assignedTo: member._id });
+    const completedTasks = await Task.countDocuments({ assignedTo: member._id, status: 'Completed' });
+    const ongoingTasks = await Task.countDocuments({ assignedTo: member._id, status: 'In Progress' });
+
+    return {
+      _id: member._id,
+      name: member.name,
+      email: member.email,
+      employeeId: member.employeeId,
+      status: member.status,
+      totalTasks,
+      completedTasks,
+      ongoingTasks,
+      completionRate: totalTasks > 0 ? (completedTasks / totalTasks * 100).toFixed(2) + '%' : '0%'
+    };
+  }));
+
+  res.json(teamMembersWithStats);
 });
 
 exports.getTeamMemberById = asyncHandler(async (req, res) => {

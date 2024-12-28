@@ -1,6 +1,8 @@
 const Task = require('../models/Task');
 const User = require('../models/User');
 const asyncHandler = require('../middleware/asyncHandler');
+const ExcelJS = require('exceljs');
+const PDFDocument = require('pdfkit');
 
 exports.getTaskReports = asyncHandler(async (req, res) => {
   const totalTasks = await Task.countDocuments();
@@ -66,30 +68,72 @@ exports.getTeamMemberReports = asyncHandler(async (req, res) => {
 });
 
 exports.exportReport = asyncHandler(async (req, res) => {
+  const { format } = req.query;
   const tasks = await Task.find().populate('assignedTo', 'name');
-  const csvRows = [
-    ['Task ID', 'Title', 'Description', 'Status', 'Priority', 'Category', 'Assigned To', 'Due Date', 'Progress']
-  ];
 
-  tasks.forEach(task => {
-    csvRows.push([
-      task._id,
-      task.title,
-      task.description,
-      task.status,
-      task.priority,
-      task.category,
-      task.assignedTo ? task.assignedTo.name : 'Unassigned',
-      task.dueDate.toISOString().split('T')[0], // Format date as YYYY-MM-DD
-      `${task.progress}%`
-    ]);
-  });
+  if (format === 'excel') {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Tasks Report');
 
-  const csvContent = csvRows.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+    worksheet.columns = [
+      { header: 'Task ID', key: 'id', width: 30 },
+      { header: 'Title', key: 'title', width: 30 },
+      { header: 'Description', key: 'description', width: 50 },
+      { header: 'Status', key: 'status', width: 15 },
+      { header: 'Priority', key: 'priority', width: 15 },
+      { header: 'Category', key: 'category', width: 20 },
+      { header: 'Assigned To', key: 'assignedTo', width: 30 },
+      { header: 'Due Date', key: 'dueDate', width: 15 },
+      { header: 'Progress', key: 'progress', width: 15 }
+    ];
 
-  res.setHeader('Content-Type', 'text/csv');
-  res.setHeader('Content-Disposition', 'attachment; filename=tasks_report.csv');
-  res.send(csvContent);
+    tasks.forEach(task => {
+      worksheet.addRow({
+        id: task._id.toString(),
+        title: task.title,
+        description: task.description,
+        status: task.status,
+        priority: task.priority,
+        category: task.category,
+        assignedTo: task.assignedTo ? task.assignedTo.name : 'Unassigned',
+        dueDate: task.dueDate.toISOString().split('T')[0],
+        progress: `${task.progress}%`
+      });
+    });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=tasks_report.xlsx');
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } else if (format === 'pdf') {
+    const doc = new PDFDocument();
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=tasks_report.pdf');
+
+    doc.pipe(res);
+
+    doc.fontSize(16).text('Tasks Report', { align: 'center' });
+    doc.moveDown();
+
+    tasks.forEach((task, index) => {
+      doc.fontSize(12).text(`Task ${index + 1}:`);
+      doc.fontSize(10).text(`ID: ${task._id}`);
+      doc.text(`Title: ${task.title}`);
+      doc.text(`Description: ${task.description}`);
+      doc.text(`Status: ${task.status}`);
+      doc.text(`Priority: ${task.priority}`);
+      doc.text(`Category: ${task.category}`);
+      doc.text(`Assigned To: ${task.assignedTo ? task.assignedTo.name : 'Unassigned'}`);
+      doc.text(`Due Date: ${task.dueDate.toISOString().split('T')[0]}`);
+      doc.text(`Progress: ${task.progress}%`);
+      doc.moveDown();
+    });
+
+    doc.end();
+  } else {
+    res.status(400).json({ message: 'Invalid export format. Use "excel" or "pdf".' });
+  }
 });
 
 exports.getProductivityReport = asyncHandler(async (req, res) => {
