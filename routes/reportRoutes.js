@@ -4,13 +4,15 @@ const {
   getTaskReports,
   getTeamMemberReports,
   exportReport,
+  getProductivityReport
 } = require('../controllers/reportController');
 
 const router = express.Router();
 
-router.route('/').get(protect, admin, getTaskReports);
-router.route('/team-performance').get(protect, admin, getTeamMemberReports);
-router.route('/export').get(protect, admin, exportReport);
+router.get('/tasks', protect, admin, getTaskReports);
+router.get('/team-performance', protect, admin, getTeamMemberReports);
+router.get('/export', protect, admin, exportReport);
+router.get('/productivity', protect, admin, getProductivityReport);
 
 module.exports = router;
 
