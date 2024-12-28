@@ -39,6 +39,10 @@ exports.addTeamMember = asyncHandler(async (req, res) => {
 
 exports.getAllTeamMembers = asyncHandler(async (req, res) => {
   const teamMembers = await User.find({ role: 'team_member' }).select('-password');
+  if (!teamMembers) {
+    res.status(404);
+    throw new Error('No team members found');
+  }
   res.json(teamMembers);
 });
 
