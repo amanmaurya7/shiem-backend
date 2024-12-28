@@ -3,47 +3,38 @@ const User = require('../models/User');
 const asyncHandler = require('../middleware/asyncHandler');
 
 exports.getTaskReports = asyncHandler(async (req, res) => {
-  const { startDate, endDate, status } = req.query;
-  let query = {};
+  const totalTasks = await Task.countDocuments();
+  const completedTasks = await Task.countDocuments({ status: 'Completed' });
+  const ongoingTasks = await Task.countDocuments({ status: 'In Progress' });
+  const overdueTasks = await Task.countDocuments({
+    dueDate: { $lt: new Date() },
+    status: { $ne: 'Completed' }
+  });
 
-  if (startDate && endDate) {
-    query.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
-  }
-
-  if (status) {
-    query.status = status;
-  }
-
-  const tasks = await Task.find(query).populate('assignedTo', 'name');
-  res.json(tasks);
+  res.json({
+    totalTasks,
+    completedTasks,
+    ongoingTasks,
+    overdueTasks
+  });
 });
 
 exports.getTeamMemberReports = asyncHandler(async (req, res) => {
   const teamMembers = await User.find({ role: 'team_member' });
-  const reports = await Promise.all(
-    teamMembers.map(async (member) => {
-      const tasksAssigned = await Task.countDocuments({ assignedTo: member._id });
-      const tasksCompleted = await Task.countDocuments({
-        assignedTo: member._id,
-        status: 'Completed',
-      });
+  const teamPerformance = {};
 
-      return {
-        id: member._id,
-        name: member.name,
-        tasksAssigned,
-        tasksCompleted,
-        completionRate: tasksAssigned > 0 ? (tasksCompleted / tasksAssigned) * 100 : 0,
-      };
-    })
-  );
+  for (const member of teamMembers) {
+    const totalTasks = await Task.countDocuments({ assignedTo: member._id });
+    const completedTasks = await Task.countDocuments({ assignedTo: member._id, status: 'Completed' });
+    const performance = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+    teamPerformance[member.name] = Math.round(performance);
+  }
 
-  res.json(reports);
+  res.json({ teamPerformance });
 });
 
 exports.exportReport = asyncHandler(async (req, res) => {
   // Implement export functionality (e.g., generate CSV or PDF)
-  // This is a placeholder implementation
   res.json({ message: 'Export functionality to be implemented' });
 });
 

@@ -8,8 +8,8 @@ const {
 
 const router = express.Router();
 
-router.route('/tasks').get(protect, admin, getTaskReports);
-router.route('/team-members').get(protect, admin, getTeamMemberReports);
+router.route('/').get(protect, admin, getTaskReports);
+router.route('/team-performance').get(protect, admin, getTeamMemberReports);
 router.route('/export').get(protect, admin, exportReport);
 
 module.exports = router;

@@ -8,6 +8,7 @@ const {
   deleteTask,
   getTasksByUser,
   getTasksSummary,
+  getRecentTasks,
 } = require('../controllers/taskController');
 
 const router = express.Router();
@@ -18,6 +19,7 @@ router.route('/')
 
 router.route('/user').get(protect, getTasksByUser);
 router.route('/summary').get(protect, admin, getTasksSummary);
+router.route('/recent').get(protect, getRecentTasks);
 
 router.route('/:id')
   .get(protect, getTaskById)

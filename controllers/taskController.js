@@ -96,3 +96,12 @@ exports.getTasksSummary = asyncHandler(async (req, res) => {
   });
 });
 
+exports.getRecentTasks = asyncHandler(async (req, res) => {
+  const recentTasks = await Task.find()
+    .sort({ createdAt: -1 })
+    .limit(5)
+    .populate('assignedTo', 'name');
+
+  res.json(recentTasks);
+});
+
