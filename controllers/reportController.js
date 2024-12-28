@@ -43,28 +43,57 @@ exports.getTaskReports = asyncHandler(async (req, res) => {
 
 exports.getTeamMemberReports = asyncHandler(async (req, res) => {
   const teamMembers = await User.find({ role: 'team_member' });
+  const totalMembers = teamMembers.length;
+
   const teamPerformance = await Promise.all(teamMembers.map(async (member) => {
     const totalTasks = await Task.countDocuments({ assignedTo: member._id });
-    const completedTasks = await Task.countDocuments({ assignedTo: member._id, status: 'Completed' });
-    const ongoingTasks = await Task.countDocuments({ assignedTo: member._id, status: 'In Progress' });
+    const tasksByStatus = await Task.aggregate([
+      { $match: { assignedTo: member._id } },
+      { $group: { _id: '$status', count: { $sum: 1 } } }
+    ]);
+
+    const statusCounts = {
+      'Pending': 0,
+      'In Progress': 0,
+      'Completed': 0,
+      'On Hold': 0
+    };
+
+    tasksByStatus.forEach(status => {
+      statusCounts[status._id] = status.count;
+    });
+
     const overdueTasks = await Task.countDocuments({
       assignedTo: member._id,
       dueDate: { $lt: new Date() },
       status: { $ne: 'Completed' }
     });
-    const performance = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
     return {
       id: member._id,
       name: member.name,
+      email: member.email,
+      employeeId: member.employeeId,
+      status: member.status,
       totalTasks,
-      completedTasks,
-      ongoingTasks,
+      tasksByStatus: statusCounts,
       overdueTasks,
-      performance: Math.round(performance)
+      completionRate: totalTasks > 0 ? ((statusCounts['Completed'] / totalTasks) * 100).toFixed(2) + '%' : '0%'
     };
   }));
 
-  res.json({ teamPerformance });
+  const overallStats = {
+    totalMembers,
+    totalTasks: teamPerformance.reduce((sum, member) => sum + member.totalTasks, 0),
+    totalCompletedTasks: teamPerformance.reduce((sum, member) => sum + member.tasksByStatus['Completed'], 0),
+    totalOverdueTasks: teamPerformance.reduce((sum, member) => sum + member.overdueTasks, 0),
+    averageCompletionRate: (teamPerformance.reduce((sum, member) => sum + parseFloat(member.completionRate), 0) / totalMembers).toFixed(2) + '%'
+  };
+
+  res.json({
+    overallStats,
+    teamPerformance
+  });
 });
 
 exports.exportReport = asyncHandler(async (req, res) => {
@@ -104,8 +133,9 @@ exports.exportReport = asyncHandler(async (req, res) => {
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', 'attachment; filename=tasks_report.xlsx');
 
-    await workbook.xlsx.write(res);
-    res.end();
+    return workbook.xlsx.write(res).then(() => {
+      res.status(200).end();
+    });
   } else if (format === 'pdf') {
     const doc = new PDFDocument();
     res.setHeader('Content-Type', 'application/pdf');

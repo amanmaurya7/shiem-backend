@@ -10,7 +10,7 @@ const {
 const router = express.Router();
 
 router.get('/tasks', protect, admin, getTaskReports);
-router.get('/team-performance', protect, admin, getTeamMemberReports);
+router.get('/team-members', protect, admin, getTeamMemberReports);
 router.get('/export', protect, admin, exportReport);
 router.get('/productivity', protect, admin, getProductivityReport);
 
