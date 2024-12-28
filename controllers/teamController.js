@@ -84,11 +84,10 @@ exports.updateTeamMember = asyncHandler(async (req, res) => {
 });
 
 exports.deleteTeamMember = asyncHandler(async (req, res) => {
-  const teamMember = await User.findById(req.params.id);
+  const deletedTeamMember = await User.findByIdAndDelete(req.params.id);
 
-  if (teamMember) {
-    await teamMember.remove();
-    res.json({ message: 'Team member removed' });
+  if (deletedTeamMember) {
+    res.json({ message: 'Team member removed', deletedMember: deletedTeamMember });
   } else {
     res.status(404);
     throw new Error('Team member not found');
