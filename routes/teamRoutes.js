@@ -7,7 +7,6 @@ const {
   updateTeamMember,
   deleteTeamMember,
   getTeamMemberStatus,
-  getTeamMembersCount,
 } = require('../controllers/teamController');
 
 const router = express.Router();
@@ -22,8 +21,6 @@ router.route('/:id')
   .get(protect, getTeamMemberById)
   .put(protect, admin, updateTeamMember)
   .delete(protect, admin, deleteTeamMember);
-
-router.route('/count').get(protect, admin, getTeamMembersCount);
 
 module.exports = router;
 

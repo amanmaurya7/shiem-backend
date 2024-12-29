@@ -137,8 +137,3 @@ exports.getTeamMemberStatus = asyncHandler(async (req, res) => {
   res.json(statuses);
 });
 
-exports.getTeamMembersCount = asyncHandler(async (req, res) => {
-  const count = await User.countDocuments({ role: 'team_member' });
-  res.json({ count });
-});
-
