@@ -22,6 +22,7 @@ const taskSchema = new mongoose.Schema({
   dueDate: {
     type: Date,
     required: true,
+    get: (date) => date?.toISOString().split('T')[0],
   },
   assignedTo: {
     type: mongoose.Schema.Types.ObjectId,
@@ -45,6 +46,8 @@ const taskSchema = new mongoose.Schema({
   },
 }, {
   timestamps: true,
+  toJSON: { getters: true },
+  toObject: { getters: true }
 });
 
 module.exports = mongoose.model('Task', taskSchema);
