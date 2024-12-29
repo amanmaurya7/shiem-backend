@@ -137,27 +137,3 @@ exports.getTeamMemberStatus = asyncHandler(async (req, res) => {
   res.json(statuses);
 });
 
-exports.getTeamMemberUpdates = asyncHandler(async (req, res) => {
-  try {
-    // Get recent team updates (last 7 days)
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-    const updates = await TeamMemberUpdate.find({
-      createdAt: { $gte: sevenDaysAgo }
-    })
-    .populate('user', 'name')
-    .sort({ createdAt: -1 })
-    .limit(5);
-
-    if (!updates) {
-      return res.json([]);
-    }
-
-    res.json(updates);
-  } catch (error) {
-    console.error('Error fetching team updates:', error);
-    res.status(500).json({ message: 'Error fetching team updates' });
-  }
-});
-
