@@ -7,6 +7,7 @@ const {
   updateTeamMember,
   deleteTeamMember,
   getTeamMemberStatus,
+  getTeamMemberUpdates,
 } = require('../controllers/teamController');
 
 const router = express.Router();
@@ -16,6 +17,9 @@ router.route('/')
   .get(protect, getAllTeamMembers);
 
 router.route('/status').get(protect, admin, getTeamMemberStatus);
+
+router.route('/updates')
+  .get(protect, admin, getTeamMemberUpdates);
 
 router.route('/:id')
   .get(protect, getTeamMemberById)
