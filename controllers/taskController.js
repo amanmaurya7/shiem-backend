@@ -86,11 +86,13 @@ exports.getTasksSummary = asyncHandler(async (req, res) => {
     status: { $ne: 'Completed' },
   });
 
+  const summaryObject = summary.reduce((acc, curr) => {
+    acc[curr._id] = curr.count;
+    return acc;
+  }, {});
+
   res.json({
-    summary: summary.reduce((acc, curr) => {
-      acc[curr._id] = curr.count;
-      return acc;
-    }, {}),
+    summary: summaryObject,
     overdueTasks,
   });
 });
