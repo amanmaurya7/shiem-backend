@@ -71,6 +71,25 @@ exports.getTasksByUser = asyncHandler(async (req, res) => {
   res.json(tasks);
 });
 
+exports.getTasksByMemberId = asyncHandler(async (req, res) => {
+  const { memberId } = req.params;
+  
+  if (!memberId) {
+    res.status(400);
+    throw new Error('Member ID is required');
+  }
+
+  const tasks = await Task.find({ assignedTo: memberId })
+    .populate('assignedTo', 'name email')
+    .sort({ createdAt: -1 });
+
+  if (!tasks) {
+    return res.json([]);
+  }
+
+  res.json(tasks);
+});
+
 exports.getTasksSummary = asyncHandler(async (req, res) => {
   const summary = await Task.aggregate([
     {
