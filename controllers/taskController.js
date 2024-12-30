@@ -2,6 +2,28 @@ const Task = require('../models/Task');
 const asyncHandler = require('../middleware/asyncHandler');
 const mongoose = require('mongoose');
 
+exports.createTask = asyncHandler(async (req, res) => {
+  const { title, description, status, priority, dueDate, assignedTo } = req.body;
+
+  const task = new Task({
+    title,
+    description,
+    status,
+    priority,
+    dueDate,
+    assignedTo,
+    createdBy: req.user._id,
+  });
+
+  const createdTask = await task.save();
+  res.status(201).json(createdTask);
+});
+
+exports.getAllTasks = asyncHandler(async (req, res) => {
+  const tasks = await Task.find({}).populate('assignedTo', 'name email');
+  res.json(tasks);
+});
+
 exports.getTaskById = asyncHandler(async (req, res) => {
   const { id } = req.params;
   
@@ -18,6 +40,52 @@ exports.getTaskById = asyncHandler(async (req, res) => {
   }
 
   res.json(task);
+});
+
+exports.updateTask = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    res.status(400);
+    throw new Error('Invalid task ID');
+  }
+
+  const task = await Task.findById(id);
+
+  if (!task) {
+    res.status(404);
+    throw new Error('Task not found');
+  }
+
+  task.title = req.body.title || task.title;
+  task.description = req.body.description || task.description;
+  task.status = req.body.status || task.status;
+  task.priority = req.body.priority || task.priority;
+  task.dueDate = req.body.dueDate || task.dueDate;
+  task.assignedTo = req.body.assignedTo || task.assignedTo;
+  task.progress = req.body.progress || task.progress;
+
+  const updatedTask = await task.save();
+  res.json(updatedTask);
+});
+
+exports.deleteTask = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    res.status(400);
+    throw new Error('Invalid task ID');
+  }
+
+  const task = await Task.findById(id);
+
+  if (!task) {
+    res.status(404);
+    throw new Error('Task not found');
+  }
+
+  await task.remove();
+  res.json({ message: 'Task removed' });
 });
 
 exports.getTasksByTeamMember = asyncHandler(async (req, res) => {
@@ -38,7 +106,6 @@ exports.getTasksByTeamMember = asyncHandler(async (req, res) => {
   res.json(tasks);
 });
 
-// Get task summary
 exports.getTasksSummary = asyncHandler(async (req, res) => {
   const summary = await Task.aggregate([
     {
@@ -63,7 +130,6 @@ exports.getTasksSummary = asyncHandler(async (req, res) => {
   });
 });
 
-// Get recent tasks
 exports.getRecentTasks = asyncHandler(async (req, res) => {
   const recentTasks = await Task.find()
     .sort({ createdAt: -1 })
@@ -72,6 +138,4 @@ exports.getRecentTasks = asyncHandler(async (req, res) => {
 
   res.json(recentTasks);
 });
-
-module.exports = exports;
 

@@ -10,12 +10,13 @@ const {
   getTasksSummary,
   getRecentTasks,
 } = require('../controllers/taskController');
-const asyncHandler = require('express-async-handler');
+const asyncHandler = require('../middleware/asyncHandler');
+const mongoose = require('mongoose');
 
 const router = express.Router();
 
 router.route('/')
-  .post(protect, createTask)
+  .post(protect, createTask)  // Make sure createTask is defined and exported from taskController
   .get(protect, getAllTasks);
 
 router.route('/team/:id').get(protect, getTasksByTeamMember);
@@ -23,15 +24,7 @@ router.route('/summary').get(protect, admin, getTasksSummary);
 router.route('/recent').get(protect, getRecentTasks);
 
 router.route('/:id')
-  .get(protect, asyncHandler(async (req, res) => {
-    const task = await Task.findById(req.params.id).populate('assignedTo', 'name email');
-    if (task) {
-      res.json(task);
-    } else {
-      res.status(404);
-      throw new Error('Task not found');
-    }
-  }))
+  .get(protect, getTaskById)
   .put(protect, updateTask)
   .delete(protect, deleteTask);
 
