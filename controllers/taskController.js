@@ -121,7 +121,7 @@ exports.getTasksByTeamMember = asyncHandler(async (req, res) => {
   }
 
   const tasks = await Task.find({ assignedTo: teamMemberId }).populate('assignedTo', 'name email');
-  
+
   if (!tasks) {
     res.status(404);
     throw new Error('No tasks found for this team member');
@@ -129,4 +129,3 @@ exports.getTasksByTeamMember = asyncHandler(async (req, res) => {
 
   res.json(tasks);
 });
-

@@ -27,4 +27,3 @@ router.route('/:id')
   .delete(protect, deleteTask);
 
 module.exports = router;
-
