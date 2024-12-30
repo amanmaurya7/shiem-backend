@@ -1,5 +1,6 @@
 const Task = require('../models/Task');
 const asyncHandler = require('../middleware/asyncHandler');
+const mongoose = require('mongoose');
 
 exports.createTask = asyncHandler(async (req, res) => {
   const { title, description, status, priority, dueDate, assignedTo, category } = req.body;
@@ -67,26 +68,14 @@ exports.deleteTask = asyncHandler(async (req, res) => {
 });
 
 exports.getTasksByUser = asyncHandler(async (req, res) => {
-  const tasks = await Task.find({ assignedTo: req.user._id }).populate('assignedTo', 'name email');
-  res.json(tasks);
-});
+  const userId = req.query.assignedTo || req.user._id;
 
-exports.getTasksByMemberId = asyncHandler(async (req, res) => {
-  const { memberId } = req.params;
-  
-  if (!memberId) {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
     res.status(400);
-    throw new Error('Member ID is required');
+    throw new Error('Invalid user ID');
   }
 
-  const tasks = await Task.find({ assignedTo: memberId })
-    .populate('assignedTo', 'name email')
-    .sort({ createdAt: -1 });
-
-  if (!tasks) {
-    return res.json([]);
-  }
-
+  const tasks = await Task.find({ assignedTo: userId }).populate('assignedTo', 'name email');
   res.json(tasks);
 });
 
@@ -121,5 +110,23 @@ exports.getRecentTasks = asyncHandler(async (req, res) => {
     .populate('assignedTo', 'name');
 
   res.json(recentTasks);
+});
+
+exports.getTasksByTeamMember = asyncHandler(async (req, res) => {
+  const teamMemberId = req.params.id;
+
+  if (!mongoose.Types.ObjectId.isValid(teamMemberId)) {
+    res.status(400);
+    throw new Error('Invalid team member ID');
+  }
+
+  const tasks = await Task.find({ assignedTo: teamMemberId }).populate('assignedTo', 'name email');
+  
+  if (!tasks) {
+    res.status(404);
+    throw new Error('No tasks found for this team member');
+  }
+
+  res.json(tasks);
 });
 

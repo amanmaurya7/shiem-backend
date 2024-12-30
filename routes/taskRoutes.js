@@ -6,10 +6,9 @@ const {
   getTaskById,
   updateTask,
   deleteTask,
-  getTasksByUser,
+  getTasksByTeamMember,
   getTasksSummary,
   getRecentTasks,
-  getTasksByMemberId,
 } = require('../controllers/taskController');
 
 const router = express.Router();
@@ -18,12 +17,9 @@ router.route('/')
   .post(protect, createTask)
   .get(protect, getAllTasks);
 
-router.route('/user').get(protect, getTasksByUser);
+router.route('/team/:id').get(protect, getTasksByTeamMember);
 router.route('/summary').get(protect, admin, getTasksSummary);
 router.route('/recent').get(protect, getRecentTasks);
-
-router.route('/member/:memberId')
-  .get(protect, getTasksByMemberId);
 
 router.route('/:id')
   .get(protect, getTaskById)
