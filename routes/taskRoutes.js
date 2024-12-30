@@ -10,6 +10,7 @@ const {
   getTasksSummary,
   getRecentTasks,
 } = require('../controllers/taskController');
+const asyncHandler = require('express-async-handler');
 
 const router = express.Router();
 
@@ -22,8 +23,17 @@ router.route('/summary').get(protect, admin, getTasksSummary);
 router.route('/recent').get(protect, getRecentTasks);
 
 router.route('/:id')
-  .get(protect, getTaskById)
+  .get(protect, asyncHandler(async (req, res) => {
+    const task = await Task.findById(req.params.id).populate('assignedTo', 'name email');
+    if (task) {
+      res.json(task);
+    } else {
+      res.status(404);
+      throw new Error('Task not found');
+    }
+  }))
   .put(protect, updateTask)
   .delete(protect, deleteTask);
 
 module.exports = router;
+

@@ -2,83 +2,43 @@ const Task = require('../models/Task');
 const asyncHandler = require('../middleware/asyncHandler');
 const mongoose = require('mongoose');
 
-exports.createTask = asyncHandler(async (req, res) => {
-  const { title, description, status, priority, dueDate, assignedTo, category } = req.body;
-
-  const task = await Task.create({
-    title,
-    description,
-    status,
-    priority,
-    dueDate,
-    assignedTo,
-    category,
-    createdBy: req.user._id,
-  });
-
-  res.status(201).json(task);
-});
-
-exports.getAllTasks = asyncHandler(async (req, res) => {
-  const tasks = await Task.find({}).populate('assignedTo', 'name email');
-  res.json(tasks);
-});
-
 exports.getTaskById = asyncHandler(async (req, res) => {
-  const task = await Task.findById(req.params.id).populate('assignedTo', 'name email');
-
-  if (task) {
-    res.json(task);
-  } else {
-    res.status(404);
-    throw new Error('Task not found');
-  }
-});
-
-exports.updateTask = asyncHandler(async (req, res) => {
-  const task = await Task.findById(req.params.id);
-
-  if (task) {
-    task.title = req.body.title || task.title;
-    task.description = req.body.description || task.description;
-    task.status = req.body.status || task.status;
-    task.priority = req.body.priority || task.priority;
-    task.dueDate = req.body.dueDate || task.dueDate;
-    task.assignedTo = req.body.assignedTo || task.assignedTo;
-    task.category = req.body.category || task.category;
-    task.progress = req.body.progress || task.progress;
-
-    const updatedTask = await task.save();
-    res.json(updatedTask);
-  } else {
-    res.status(404);
-    throw new Error('Task not found');
-  }
-});
-
-exports.deleteTask = asyncHandler(async (req, res) => {
-  const deletedTask = await Task.findByIdAndDelete(req.params.id);
-
-  if (deletedTask) {
-    res.json({ message: 'Task removed', deletedTask });
-  } else {
-    res.status(404);
-    throw new Error('Task not found');
-  }
-});
-
-exports.getTasksByUser = asyncHandler(async (req, res) => {
-  const userId = req.query.assignedTo || req.user._id;
-
-  if (!mongoose.Types.ObjectId.isValid(userId)) {
+  const { id } = req.params;
+  
+  if (!mongoose.Types.ObjectId.isValid(id)) {
     res.status(400);
-    throw new Error('Invalid user ID');
+    throw new Error('Invalid task ID');
   }
 
-  const tasks = await Task.find({ assignedTo: userId }).populate('assignedTo', 'name email');
+  const task = await Task.findById(id).populate('assignedTo', 'name email');
+
+  if (!task) {
+    res.status(404);
+    throw new Error('Task not found');
+  }
+
+  res.json(task);
+});
+
+exports.getTasksByTeamMember = asyncHandler(async (req, res) => {
+  const teamMemberId = req.params.id;
+
+  if (!mongoose.Types.ObjectId.isValid(teamMemberId)) {
+    res.status(400);
+    throw new Error('Invalid team member ID');
+  }
+
+  const tasks = await Task.find({ assignedTo: teamMemberId }).populate('assignedTo', 'name email');
+
+  if (!tasks) {
+    res.status(404);
+    throw new Error('No tasks found for this team member');
+  }
+
   res.json(tasks);
 });
 
+// Get task summary
 exports.getTasksSummary = asyncHandler(async (req, res) => {
   const summary = await Task.aggregate([
     {
@@ -103,6 +63,7 @@ exports.getTasksSummary = asyncHandler(async (req, res) => {
   });
 });
 
+// Get recent tasks
 exports.getRecentTasks = asyncHandler(async (req, res) => {
   const recentTasks = await Task.find()
     .sort({ createdAt: -1 })
@@ -112,20 +73,5 @@ exports.getRecentTasks = asyncHandler(async (req, res) => {
   res.json(recentTasks);
 });
 
-exports.getTasksByTeamMember = asyncHandler(async (req, res) => {
-  const teamMemberId = req.params.id;
+module.exports = exports;
 
-  if (!mongoose.Types.ObjectId.isValid(teamMemberId)) {
-    res.status(400);
-    throw new Error('Invalid team member ID');
-  }
-
-  const tasks = await Task.find({ assignedTo: teamMemberId }).populate('assignedTo', 'name email');
-
-  if (!tasks) {
-    res.status(404);
-    throw new Error('No tasks found for this team member');
-  }
-
-  res.json(tasks);
-});
