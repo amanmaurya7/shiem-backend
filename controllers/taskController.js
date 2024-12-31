@@ -1,22 +1,33 @@
 const Task = require('../models/Task');
+const User = require('../models/User'); // Import User model
 const asyncHandler = require('../middleware/asyncHandler');
 const mongoose = require('mongoose');
 
 exports.createTask = asyncHandler(async (req, res) => {
   const { title, description, status, priority, dueDate, assignedTo } = req.body;
 
-  const task = new Task({
-    title,
-    description,
-    status,
-    priority,
-    dueDate,
-    assignedTo,
-    createdBy: req.user._id,
-  });
+  try {
+    const assignedToUser = await User.findById(assignedTo); // Find assigned user
 
-  const createdTask = await task.save();
-  res.status(201).json(createdTask);
+    if (!assignedToUser) {
+      return res.status(404).json({ message: 'Assigned user not found' });
+    }
+
+    const task = new Task({
+      title,
+      description,
+      status,
+      priority,
+      dueDate,
+      assignedTo: assignedToUser._id, // Assign the ObjectId
+      createdBy: req.user._id,
+    });
+
+    const createdTask = await task.save();
+    res.status(201).json(createdTask);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
 
 exports.getAllTasks = asyncHandler(async (req, res) => {
@@ -57,16 +68,28 @@ exports.updateTask = asyncHandler(async (req, res) => {
     throw new Error('Task not found');
   }
 
-  task.title = req.body.title || task.title;
-  task.description = req.body.description || task.description;
-  task.status = req.body.status || task.status;
-  task.priority = req.body.priority || task.priority;
-  task.dueDate = req.body.dueDate || task.dueDate;
-  task.assignedTo = req.body.assignedTo || task.assignedTo;
-  task.progress = req.body.progress || task.progress;
+  try {
+    task.title = req.body.title || task.title;
+    task.description = req.body.description || task.description;
+    task.status = req.body.status || task.status;
+    task.priority = req.body.priority || task.priority;
+    task.dueDate = req.body.dueDate || task.dueDate;
+    if (req.body.assignedTo) {
+      const assignedToUser = await User.findById(req.body.assignedTo); // Find assigned user
 
-  const updatedTask = await task.save();
-  res.json(updatedTask);
+      if (!assignedToUser) {
+        return res.status(404).json({ message: 'Assigned user not found' });
+      }
+
+      task.assignedTo = assignedToUser._id; // Assign the ObjectId
+    }
+    task.progress = req.body.progress || task.progress;
+
+    const updatedTask = await task.save();
+    res.json(updatedTask);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
 
 exports.deleteTask = asyncHandler(async (req, res) => {
