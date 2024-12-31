@@ -3,37 +3,20 @@ const asyncHandler = require('../middleware/asyncHandler');
 const mongoose = require('mongoose');
 
 exports.createTask = asyncHandler(async (req, res) => {
-  console.log('Received task creation request:', req.body);
+  const { title, description, status, priority, dueDate, assignedTo } = req.body;
 
-  const { title, description, status, priority, dueDate, assignedTo, category } = req.body;
+  const task = new Task({
+    title,
+    description,
+    status,
+    priority,
+    dueDate,
+    assignedTo,
+    createdBy: req.user._id,
+  });
 
-  // Validate required fields
-  if (!title || !description || !status || !priority || !dueDate || !assignedTo || !category) {
-    console.error('Missing required fields:', { title, description, status, priority, dueDate, assignedTo, category });
-    res.status(400);
-    throw new Error('Please provide all required fields');
-  }
-
-  try {
-    const task = new Task({
-      title,
-      description,
-      status,
-      priority,
-      dueDate,
-      assignedTo,
-      createdBy: req.user._id,
-      category,
-    });
-
-    const createdTask = await task.save();
-    console.log('Task created successfully:', createdTask);
-    res.status(201).json(createdTask);
-  } catch (error) {
-    console.error('Error saving task to database:', error);
-    res.status(500);
-    throw new Error('Failed to create task: ' + error.message);
-  }
+  const createdTask = await task.save();
+  res.status(201).json(createdTask);
 });
 
 exports.getAllTasks = asyncHandler(async (req, res) => {
@@ -94,22 +77,15 @@ exports.deleteTask = asyncHandler(async (req, res) => {
     throw new Error('Invalid task ID');
   }
 
-  try {
-    const task = await Task.findById(id);
+  const task = await Task.findById(id);
 
-    if (!task) {
-      res.status(404);
-      throw new Error('Task not found');
-    }
-
-    await task.remove();
-    console.log('Task deleted successfully:', id);
-    res.json({ message: 'Task removed' });
-  } catch (error) {
-    console.error('Error deleting task:', error);
-    res.status(500);
-    throw new Error('Failed to delete task: ' + error.message);
+  if (!task) {
+    res.status(404);
+    throw new Error('Task not found');
   }
+
+  await task.remove();
+  res.json({ message: 'Task removed' });
 });
 
 exports.getTasksByTeamMember = asyncHandler(async (req, res) => {
