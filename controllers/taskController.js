@@ -19,7 +19,7 @@ exports.createTask = asyncHandler(async (req, res) => {
       status,
       priority,
       dueDate,
-      assignedTo: assignedToUser._id, // Assign the ObjectId
+      assignedTo: req.body.assignedTo, // Directly assign the _id
       createdBy: req.user._id,
     });
 
@@ -75,13 +75,7 @@ exports.updateTask = asyncHandler(async (req, res) => {
     task.priority = req.body.priority || task.priority;
     task.dueDate = req.body.dueDate || task.dueDate;
     if (req.body.assignedTo) {
-      const assignedToUser = await User.findById(req.body.assignedTo); // Find assigned user
-
-      if (!assignedToUser) {
-        return res.status(404).json({ message: 'Assigned user not found' });
-      }
-
-      task.assignedTo = assignedToUser._id; // Assign the ObjectId
+      task.assignedTo = req.body.assignedTo; // Directly assign the _id
     }
     task.progress = req.body.progress || task.progress;
 
