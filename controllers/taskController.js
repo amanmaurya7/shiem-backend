@@ -94,15 +94,22 @@ exports.deleteTask = asyncHandler(async (req, res) => {
     throw new Error('Invalid task ID');
   }
 
-  const task = await Task.findById(id);
+  try {
+    const task = await Task.findById(id);
 
-  if (!task) {
-    res.status(404);
-    throw new Error('Task not found');
+    if (!task) {
+      res.status(404);
+      throw new Error('Task not found');
+    }
+
+    await task.remove();
+    console.log('Task deleted successfully:', id);
+    res.json({ message: 'Task removed' });
+  } catch (error) {
+    console.error('Error deleting task:', error);
+    res.status(500);
+    throw new Error('Failed to delete task: ' + error.message);
   }
-
-  await task.remove();
-  res.json({ message: 'Task removed' });
 });
 
 exports.getTasksByTeamMember = asyncHandler(async (req, res) => {
