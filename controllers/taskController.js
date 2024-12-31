@@ -3,7 +3,7 @@ const asyncHandler = require('../middleware/asyncHandler');
 const mongoose = require('mongoose');
 
 exports.createTask = asyncHandler(async (req, res) => {
-  const { title, description, status, priority, dueDate, assignedTo } = req.body;
+  const { title, description, status, priority, dueDate, assignedTo, category } = req.body;
 
   const task = new Task({
     title,
@@ -13,6 +13,7 @@ exports.createTask = asyncHandler(async (req, res) => {
     dueDate,
     assignedTo,
     createdBy: req.user._id,
+    category,
   });
 
   const createdTask = await task.save();
