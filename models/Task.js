@@ -33,10 +33,6 @@ const taskSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
-  category: {
-    type: String,
-    required: true,
-  },
   progress: {
     type: Number,
     default: 0,
