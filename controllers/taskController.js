@@ -3,21 +3,37 @@ const asyncHandler = require('../middleware/asyncHandler');
 const mongoose = require('mongoose');
 
 exports.createTask = asyncHandler(async (req, res) => {
+  console.log('Received task creation request:', req.body);
+
   const { title, description, status, priority, dueDate, assignedTo, category } = req.body;
 
-  const task = new Task({
-    title,
-    description,
-    status,
-    priority,
-    dueDate,
-    assignedTo,
-    createdBy: req.user._id,
-    category,
-  });
+  // Validate required fields
+  if (!title || !description || !status || !priority || !dueDate || !assignedTo || !category) {
+    console.error('Missing required fields:', { title, description, status, priority, dueDate, assignedTo, category });
+    res.status(400);
+    throw new Error('Please provide all required fields');
+  }
 
-  const createdTask = await task.save();
-  res.status(201).json(createdTask);
+  try {
+    const task = new Task({
+      title,
+      description,
+      status,
+      priority,
+      dueDate,
+      assignedTo,
+      createdBy: req.user._id,
+      category,
+    });
+
+    const createdTask = await task.save();
+    console.log('Task created successfully:', createdTask);
+    res.status(201).json(createdTask);
+  } catch (error) {
+    console.error('Error saving task to database:', error);
+    res.status(500);
+    throw new Error('Failed to create task: ' + error.message);
+  }
 });
 
 exports.getAllTasks = asyncHandler(async (req, res) => {
