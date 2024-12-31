@@ -84,7 +84,7 @@ exports.deleteTask = asyncHandler(async (req, res) => {
     throw new Error('Task not found');
   }
 
-  await task.remove();
+  await Task.deleteOne({ _id: id });
   res.json({ message: 'Task removed' });
 });
 
