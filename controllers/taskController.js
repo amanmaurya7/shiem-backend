@@ -68,21 +68,40 @@ exports.updateTask = asyncHandler(async (req, res) => {
     throw new Error('Task not found');
   }
 
-  try {
-    task.title = req.body.title || task.title;
-    task.description = req.body.description || task.description;
-    task.status = req.body.status || task.status;
-    task.priority = req.body.priority || task.priority;
-    task.dueDate = req.body.dueDate || task.dueDate;
-    if (req.body.assignedTo) {
-      task.assignedTo = req.body.assignedTo; // Directly assign the _id
-    }
-    task.progress = req.body.progress || task.progress;
+  const {
+    title,
+    description,
+    status,
+    priority,
+    dueDate,
+    assignedTo,
+    category,
+    progress
+  } = req.body;
 
+  // Update all fields
+  if (title) task.title = title;
+  if (description) task.description = description;
+  if (status) task.status = status;
+  if (priority) task.priority = priority;
+  if (dueDate) task.dueDate = new Date(dueDate);
+  if (assignedTo) {
+    const user = await User.findById(assignedTo);
+    if (!user) {
+      res.status(400);
+      throw new Error('Invalid user ID for assignedTo');
+    }
+    task.assignedTo = assignedTo;
+  }
+  if (category) task.category = category;
+  if (progress !== undefined) task.progress = progress;
+
+  try {
     const updatedTask = await task.save();
     res.json(updatedTask);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(400);
+    throw new Error('Error updating task: ' + error.message);
   }
 });
 
@@ -155,4 +174,3 @@ exports.getRecentTasks = asyncHandler(async (req, res) => {
 
   res.json(recentTasks);
 });
-
